@@ -1,6 +1,7 @@
 """Marktguru API client for fetching supermarket offers."""
 
 import logging
+from unittest import result
 
 import requests
 
@@ -65,7 +66,12 @@ def fetch_offers(item_name: str, config: Config) -> list[PriceOffer]:
             continue
 
         regular_price = result.get("regularPrice")
-        description = result.get("description", item_name)
+        product_name = (result.get("product") or {}).get("name", "")
+        brand_name = (result.get("brand") or {}).get("name", "")
+        # Skip placeholder brand
+        if brand_name == "thisisnobrand123":
+            brand_name = ""
+        description = f"{brand_name} {product_name}".strip() or result.get("description", item_name)
 
         for market in matched_markets:
             offers.append(
