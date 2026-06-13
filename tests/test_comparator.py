@@ -1,6 +1,6 @@
 """Unit tests for the price comparison logic."""
 
-from src.Ainkaufen import CartSummary, PriceOffer
+from Ainkaufen.models import CartSummary, PriceOffer
 
 
 def test_cart_summary_total_savings() -> None:
@@ -27,8 +27,10 @@ def test_cart_summary_no_savings() -> None:
 
 
 def test_price_offer_savings_property() -> None:
+    import pytest
+
     offer = PriceOffer("Edeka", "Yogurt", 0.49, regular_price=0.79)
-    assert offer.savings == 0.30
+    assert offer.savings == pytest.approx(0.30)
 
     offer_no_regular = PriceOffer("Edeka", "Yogurt", 0.49, regular_price=None)
     assert offer_no_regular.savings is None
