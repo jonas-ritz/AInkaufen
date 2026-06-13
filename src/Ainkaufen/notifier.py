@@ -16,7 +16,7 @@ _MEDALS = ["🥇", "🥈", "🥉", "4️⃣"]
 
 def format_message(
     ranked_carts: list[CartSummary],
-    pantry_carts: dict[str, CartSummary],
+    pantry_carts: list[CartSummary],
 ) -> str:
     """
     Format the weekly WhatsApp summary message.
@@ -51,8 +51,8 @@ def format_message(
 
     # Pantry tips
     pantry_offers: list[tuple[str, list[PriceOffer]]] = [
-        (market, cart.items)
-        for market, cart in pantry_carts.items()
+        (cart.supermarket, cart.items)
+        for cart in pantry_carts
         if cart.items
     ]
 

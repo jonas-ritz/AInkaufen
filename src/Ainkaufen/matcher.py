@@ -19,14 +19,8 @@ def match_best_offers(
     """
     Use Claude to find the best semantically matching offer per supermarket.
 
-    Args:
-        item_name: The item the user is looking for.
-        offers: Raw list of offers returned by the scraper.
-        config: Application configuration.
-
-    Returns:
-        A dict mapping supermarket name to its best matching PriceOffer,
-        or None if no suitable offer was found.
+    Returns the original PriceOffer from the scraped list (via index),
+    so prices are always authoritative and never hallucinated by the model.
     """
     if not offers:
         return {market: None for market in config.supermarkets}
@@ -38,6 +32,11 @@ def match_best_offers(
         for i, o in enumerate(offers)
     )
 
+    # Build example JSON dynamically so it always reflects the actual supermarket list
+    example_markets = {config.supermarkets[0]: {"index": 1}}
+    example_markets.update({m: None for m in config.supermarkets[1:]})
+    example_json = json.dumps(example_markets, ensure_ascii=False)
+
     prompt = f"""The user is looking for: "{item_name}"
 
 Available offers this week:
@@ -46,27 +45,24 @@ Available offers this week:
 Supermarkets: {", ".join(config.supermarkets)}
 
 Task:
-- For each supermarket, select the offer that best semantically matches "{item_name}".
+- For each supermarket, return the offer NUMBER (index) that best semantically matches "{item_name}".
 - Ignore clearly unrelated products (e.g. "chocolate milk" when searching for "milk").
 - If no suitable offer exists for a supermarket, return null.
-- Do not invent prices.
 
 Respond with JSON only, no preamble:
-{{
-    "Edeka": {{"index": 1, "offer_price": 0.99, "regular_price": 1.29, "description": "Whole milk 1L"}},
-    "Netto": null,
-    "Kaufland": {{"index": 3, "offer_price": 1.09, "regular_price": null, "description": "Fresh milk 1L"}}
-}}"""
+{example_json}"""
 
     client = anthropic.Anthropic(api_key=config.anthropic_api_key)
 
     try:
         response = client.messages.create(
             model="claude-sonnet-4-5",
-            max_tokens=500,
+            max_tokens=256,
             messages=[{"role": "user", "content": prompt}],
         )
-        text = response.content[0].text.strip().replace("```json", "").replace("```", "")
+        text = response.content[0].text.strip()
+        # Strip optional fenced code block
+        text = text.removeprefix("```json").removeprefix("```").removesuffix("```").strip()
         matches: dict[str, dict | None] = json.loads(text)
     except (anthropic.APIError, json.JSONDecodeError) as exc:
         logger.warning("Matching failed for '%s': %s", item_name, exc)
@@ -79,11 +75,12 @@ Respond with JSON only, no preamble:
             result[market] = None
             continue
 
-        result[market] = PriceOffer(
-            supermarket=market,
-            description=match["description"],
-            offer_price=float(match["offer_price"]),
-            regular_price=float(match["regular_price"]) if match.get("regular_price") else None,
-        )
+        idx = match.get("index")
+        if not isinstance(idx, int) or not (1 <= idx <= len(offers)):
+            logger.warning("Invalid index %r from Claude for '%s' @ %s", idx, item_name, market)
+            result[market] = None
+            continue
+
+        result[market] = offers[idx - 1]
 
     return result

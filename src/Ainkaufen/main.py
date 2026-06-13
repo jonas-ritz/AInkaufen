@@ -35,7 +35,7 @@ def main() -> None:
     ranked = rank_by_savings(shopping_carts)
 
     logger.info("Building carts for %d pantry items", len(pantry_items))
-    pantry_carts = build_carts(pantry_items, config)
+    pantry_carts = rank_by_savings(build_carts(pantry_items, config))
 
     # Print summary to terminal
     print("\n" + "=" * 60)

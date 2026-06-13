@@ -1,7 +1,6 @@
 """Marktguru API client for fetching supermarket offers."""
 
 import logging
-from unittest import result
 
 import requests
 

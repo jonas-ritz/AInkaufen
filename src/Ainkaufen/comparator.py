@@ -1,13 +1,20 @@
 """Price comparison logic across supermarkets."""
 
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from .config import Config
-from .models import CartSummary, GroceryItem, PriceOffer
 from .matcher import match_best_offers
+from .models import CartSummary, GroceryItem, PriceOffer
 from .scraper import fetch_offers
 
 logger = logging.getLogger(__name__)
+
+
+def _fetch_and_match(item: GroceryItem, config: Config) -> dict[str, PriceOffer | None]:
+    logger.info("Searching offers for: %s", item.name)
+    offers = fetch_offers(item.name, config)
+    return match_best_offers(item.name, offers, config)
 
 
 def build_carts(
@@ -16,38 +23,32 @@ def build_carts(
 ) -> dict[str, CartSummary]:
     """
     Build a CartSummary per supermarket for a list of grocery items.
-
-    Args:
-        items: List of grocery items to look up.
-        config: Application configuration.
-
-    Returns:
-        A dict mapping supermarket name to its CartSummary.
+    Items are fetched and matched concurrently; results are merged sequentially.
     """
     carts: dict[str, CartSummary] = {
         market: CartSummary(supermarket=market) for market in config.supermarkets
     }
 
-    for item in items:
-        logger.info("Searching offers for: %s", item.name)
-        offers = fetch_offers(item.name, config)
-        best_per_market = match_best_offers(item.name, offers, config)
-
-        for market, offer in best_per_market.items():
-            if offer is not None:
-                carts[market].items.append(offer)
+    with ThreadPoolExecutor(max_workers=min(len(items), 8)) as executor:
+        futures = {executor.submit(_fetch_and_match, item, config): item for item in items}
+        for future in as_completed(futures):
+            item = futures[future]
+            try:
+                best_per_market = future.result()
+            except Exception as exc:
+                logger.warning("Failed to process '%s': %s", item.name, exc)
+                continue
+            for market, offer in best_per_market.items():
+                if offer is not None:
+                    carts[market].items.append(offer)
 
     return carts
 
 
 def rank_by_savings(carts: dict[str, CartSummary]) -> list[CartSummary]:
     """
-    Rank supermarkets by total savings descending.
-
-    Args:
-        carts: Dict of CartSummary objects per supermarket.
-
-    Returns:
-        Sorted list of CartSummary, highest savings first.
+    Rank supermarkets by total savings descending, then by total price ascending.
+    Markets with no matching offers are excluded.
     """
-    return sorted(carts.values(), key=lambda c: c.total_savings, reverse=True)
+    active = [c for c in carts.values() if c.items]
+    return sorted(active, key=lambda c: (-c.total_savings, c.total_offer_price))
