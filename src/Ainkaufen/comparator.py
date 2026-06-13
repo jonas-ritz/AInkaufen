@@ -51,4 +51,4 @@ def rank_by_savings(carts: dict[str, CartSummary]) -> list[CartSummary]:
     Markets with no matching offers are excluded.
     """
     active = [c for c in carts.values() if c.items]
-    return sorted(active, key=lambda c: (-c.total_savings, c.total_offer_price))
+    return sorted(active, key=lambda c: c.total_savings, reverse=True)

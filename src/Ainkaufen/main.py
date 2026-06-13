@@ -57,7 +57,28 @@ def main() -> None:
             regular_str = f"was {offer.regular_price:.2f}€  " if offer.regular_price else ""
             print(f"   🏷️  {offer.description:<30} {offer.offer_price:.2f}€  {regular_str}{savings_str}")
 
-    # Send WhatsApp notification
+    # Print pantry deals to terminal
+    print("\n" + "=" * 60)
+    print("VORRATS-DEALS (diese Woche im Angebot)")
+    print("Ranking: Supermarkt mit den höchsten Ersparnissen zuerst")
+    print("=" * 60)
+    if pantry_carts:
+        for i, cart in enumerate(pantry_carts):
+            medals = ["🥇", "🥈", "🥉", "4️⃣"]
+            medal = medals[i] if i < len(medals) else "•"
+            print(f"\n{medal} {cart.supermarket.upper()}")
+            print(f"   Deals gefunden:  {len(cart.items)}")
+            print(f"   Gesamtpreis:     {cart.total_offer_price:.2f}€")
+            print(f"   Gesamtersparnis: {cart.total_savings:.2f}€")
+            print("-" * 40)
+            for offer in cart.items:
+                savings_str = f"  spare {offer.savings:.2f}€" if offer.savings else ""
+                regular_str = f"war {offer.regular_price:.2f}€  " if offer.regular_price else ""
+                print(f"   🏷️  {offer.description:<30} {offer.offer_price:.2f}€  {regular_str}{savings_str}")
+    else:
+        print("\nKeine Vorrats-Deals diese Woche gefunden.")
+
+    # Send Telegram notification
     message = format_message(ranked, pantry_carts)
     logger.info("Sending Telegram notification")
     send_telegram(message, config)

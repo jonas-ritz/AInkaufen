@@ -17,13 +17,13 @@ def format_message(
     pantry_carts: list[CartSummary],
 ) -> str:
     lines: list[str] = [
-        "🛒 *WEEKLY PRICE COMPARISON*",
-        "_Ranking nach höchster Gesamtersparnis (Regelpreis − Angebotspreis)_\n",
+        "🛒 <b>WEEKLY PRICE COMPARISON</b>",
+        "<i>Ranking nach höchster Gesamtersparnis (Regelpreis - Angebotspreis)</i>\n",
     ]
 
     for i, cart in enumerate(ranked_carts):
         medal = _MEDALS[i] if i < len(_MEDALS) else "•"
-        lines.append(f"{medal} *{cart.supermarket}*")
+        lines.append(f"{medal} <b>{cart.supermarket}</b>")
         lines.append(f"   Angebote gefunden: {len(cart.items)}")
         lines.append(f"   Gesamtpreis: {cart.total_offer_price:.2f}€")
 
@@ -36,7 +36,7 @@ def format_message(
 
     if ranked_carts:
         best = ranked_carts[0]
-        lines.append(f"✅ *Empfehlung: {best.supermarket}*")
+        lines.append(f"✅ <b>Empfehlung: {best.supermarket}</b>")
         if best.total_savings > 0:
             lines.append(f"   Diese Woche {best.total_savings:.2f}€ sparen!")
 
@@ -47,7 +47,7 @@ def format_message(
     ]
 
     if pantry_offers:
-        lines.append("\n📦 *VORRATS-DEALS (diese Woche im Angebot)*")
+        lines.append("\n📦 <b>VORRATS-DEALS (diese Woche im Angebot)</b>")
         seen: set[str] = set()
         all_pantry = [
             (item, market)
@@ -74,7 +74,7 @@ def send_telegram(message: str, config: Config) -> bool:
             json={
                 "chat_id": config.telegram_chat_id,
                 "text": message,
-                "parse_mode": "Markdown",
+                "parse_mode": "HTML",
             },
             timeout=15,
         )
@@ -83,4 +83,6 @@ def send_telegram(message: str, config: Config) -> bool:
         return True
     except requests.RequestException as exc:
         logger.error("Failed to send Telegram message: %s", exc)
+        if hasattr(exc, "response") and exc.response is not None:
+            logger.error("Telegram API error: %s", exc.response.text)
         return False
