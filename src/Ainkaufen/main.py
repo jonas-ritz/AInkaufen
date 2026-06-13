@@ -5,7 +5,7 @@ import sys
 
 from .comparator import build_carts, rank_by_savings
 from .config import Config
-from .notifier import format_message, send_whatsapp
+from .notifier import format_message, send_telegram
 from .sheet import load_grocery_list
 
 logging.basicConfig(
@@ -40,6 +40,8 @@ def main() -> None:
     # Print summary to terminal
     print("\n" + "=" * 60)
     print("WEEKLY GROCERY PRICE COMPARISON")
+    print("Ranking: Supermarkt mit den höchsten Ersparnissen zuerst")
+    print("(Summe aller Rabatte: Regelpreis minus Angebotspreis)")
     print("=" * 60)
 
     for i, cart in enumerate(ranked):
@@ -57,8 +59,8 @@ def main() -> None:
 
     # Send WhatsApp notification
     message = format_message(ranked, pantry_carts)
-    logger.info("Sending WhatsApp notification")
-    send_whatsapp(message, config)
+    logger.info("Sending Telegram notification")
+    send_telegram(message, config)
 
 
 if __name__ == "__main__":

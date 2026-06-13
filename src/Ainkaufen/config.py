@@ -13,8 +13,8 @@ class Config:
     """Immutable application configuration."""
 
     anthropic_api_key: str
-    callmebot_phone: str
-    callmebot_api_key: str
+    telegram_bot_token: str
+    telegram_chat_id: str
     sheet_id: str
     plz: str
     supermarkets: tuple[str, ...] = ("Edeka", "Netto", "Kaufland")
@@ -25,8 +25,8 @@ class Config:
         """Load and validate config from environment variables."""
         required = {
             "ANTHROPIC_API_KEY": os.getenv("ANTHROPIC_API_KEY"),
-            "CALLMEBOT_PHONE": os.getenv("CALLMEBOT_PHONE"),
-            "CALLMEBOT_APIKEY": os.getenv("CALLMEBOT_APIKEY"),
+            "TELEGRAM_BOT_TOKEN": os.getenv("TELEGRAM_BOT_TOKEN"),
+            "TELEGRAM_CHAT_ID": os.getenv("TELEGRAM_CHAT_ID"),
             "SHEET_ID": os.getenv("SHEET_ID"),
         }
 
@@ -38,8 +38,8 @@ class Config:
 
         return cls(
             anthropic_api_key=required["ANTHROPIC_API_KEY"],  # type: ignore[arg-type]
-            callmebot_phone=required["CALLMEBOT_PHONE"],  # type: ignore[arg-type]
-            callmebot_api_key=required["CALLMEBOT_APIKEY"],  # type: ignore[arg-type]
+            telegram_bot_token=required["TELEGRAM_BOT_TOKEN"],  # type: ignore[arg-type]
+            telegram_chat_id=required["TELEGRAM_CHAT_ID"],  # type: ignore[arg-type]
             sheet_id=required["SHEET_ID"],  # type: ignore[arg-type]
             plz=os.getenv("PLZ", "52428"),
         )
