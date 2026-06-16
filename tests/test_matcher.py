@@ -14,8 +14,8 @@ from Ainkaufen.models import PriceOffer
 def config() -> Config:
     return Config(
         anthropic_api_key="test-key",
-        callmebot_phone="123",
-        callmebot_api_key="abc",
+        smtp_user="test@example.com",
+        smtp_password="abc",
         sheet_id="sheet-id",
         plz="12345",
         supermarkets=("Edeka", "Netto", "Kaufland"),

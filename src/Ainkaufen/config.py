@@ -13,10 +13,13 @@ class Config:
     """Immutable application configuration."""
 
     anthropic_api_key: str
-    telegram_bot_token: str
-    telegram_chat_id: str
+    smtp_user: str
+    smtp_password: str
     sheet_id: str
     plz: str
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = 587
+    email_to: str = "JonasRitz1998@web.de"
     supermarkets: tuple[str, ...] = ("Edeka", "Netto", "Kaufland")
     credentials_path: str = "credentials.json"
 
@@ -25,8 +28,8 @@ class Config:
         """Load and validate config from environment variables."""
         required = {
             "ANTHROPIC_API_KEY": os.getenv("ANTHROPIC_API_KEY"),
-            "TELEGRAM_BOT_TOKEN": os.getenv("TELEGRAM_BOT_TOKEN"),
-            "TELEGRAM_CHAT_ID": os.getenv("TELEGRAM_CHAT_ID"),
+            "SMTP_USER": os.getenv("SMTP_USER"),
+            "SMTP_PASSWORD": os.getenv("SMTP_PASSWORD"),
             "SHEET_ID": os.getenv("SHEET_ID"),
         }
 
@@ -38,8 +41,11 @@ class Config:
 
         return cls(
             anthropic_api_key=required["ANTHROPIC_API_KEY"],  # type: ignore[arg-type]
-            telegram_bot_token=required["TELEGRAM_BOT_TOKEN"],  # type: ignore[arg-type]
-            telegram_chat_id=required["TELEGRAM_CHAT_ID"],  # type: ignore[arg-type]
+            smtp_user=required["SMTP_USER"],  # type: ignore[arg-type]
+            smtp_password=required["SMTP_PASSWORD"],  # type: ignore[arg-type]
             sheet_id=required["SHEET_ID"],  # type: ignore[arg-type]
             plz=os.getenv("PLZ", "52428"),
+            smtp_host=os.getenv("SMTP_HOST", "smtp.gmail.com"),
+            smtp_port=int(os.getenv("SMTP_PORT", "587")),
+            email_to=os.getenv("EMAIL_TO", "JonasRitz1998@web.de"),
         )

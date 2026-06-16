@@ -5,7 +5,7 @@ import sys
 
 from .comparator import build_carts, rank_by_savings
 from .config import Config
-from .notifier import format_message, send_telegram
+from .notifier import format_message, send_email
 from .sheet import load_grocery_list
 
 logging.basicConfig(
@@ -78,10 +78,10 @@ def main() -> None:
     else:
         print("\nKeine Vorrats-Deals diese Woche gefunden.")
 
-    # Send Telegram notification
+    # Send email notification
     message = format_message(ranked, pantry_carts)
-    logger.info("Sending Telegram notification")
-    send_telegram(message, config)
+    logger.info("Sending email notification to %s", config.email_to)
+    send_email(message, config)
 
 
 if __name__ == "__main__":

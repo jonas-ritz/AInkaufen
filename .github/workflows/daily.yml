@@ -1,8 +1,8 @@
-name: Weekly Price Comparison
+name: Daily Price Comparison
 
 on:
   schedule:
-    - cron: '0 1 * * 5'  # Freitags ~02:00 Uhr deutscher Zeit (CET)
+    - cron: '0 5 * * *'  # Täglich ~06:00/07:00 Uhr deutscher Zeit (CET/CEST)
   workflow_dispatch:      # Manuell auslösbar zum Testen
 
 jobs:
@@ -27,8 +27,11 @@ jobs:
       - name: Run price comparison
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
           SHEET_ID: ${{ secrets.SHEET_ID }}
           PLZ: ${{ secrets.PLZ }}
         run: python -m Ainkaufen.main
