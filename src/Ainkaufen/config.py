@@ -48,6 +48,6 @@ class Config:
             sheet_id=required["SHEET_ID"],  # type: ignore[arg-type]
             plz=required["PLZ"],  # type: ignore[arg-type]
             email_to=required["EMAIL_TO"],  # type: ignore[arg-type]
-            smtp_host=os.getenv("SMTP_HOST", "smtp.gmail.com"),
-            smtp_port=int(os.getenv("SMTP_PORT", "587")),
+            smtp_host=os.getenv("SMTP_HOST") or "smtp.gmail.com",
+            smtp_port=int(os.getenv("SMTP_PORT") or "587"),
         )
