@@ -46,8 +46,8 @@ SMTP_USER=your-gmail-address@gmail.com
 SMTP_PASSWORD=your-app-password
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
-EMAIL_TO=JonasRitz1998@web.de
-PLZ=52428
+EMAIL_TO=destination-email-adress
+PLZ=german-postal-code
 ```
 
 `SMTP_USER`/`SMTP_PASSWORD` are the credentials of the account that *sends* the email (e.g. a Gmail account with an [App Password](https://myaccount.google.com/apppasswords)). `EMAIL_TO` is the recipient address.
