@@ -1,8 +1,8 @@
-"""Telegram notification via Bot API."""
+"""Email notification via SMTP."""
 
 import logging
-
-import requests
+import smtplib
+from email.message import EmailMessage
 
 from .config import Config
 from .models import CartSummary, PriceOffer
@@ -18,27 +18,27 @@ def format_message(
 ) -> str:
     lines: list[str] = [
         "🛒 <b>WEEKLY PRICE COMPARISON</b>",
-        "<i>Ranking nach höchster Gesamtersparnis (Regelpreis - Angebotspreis)</i>\n",
+        "<i>Ranking nach höchster Gesamtersparnis (Regelpreis - Angebotspreis)</i><br><br>",
     ]
 
     for i, cart in enumerate(ranked_carts):
         medal = _MEDALS[i] if i < len(_MEDALS) else "•"
-        lines.append(f"{medal} <b>{cart.supermarket}</b>")
-        lines.append(f"   Angebote gefunden: {len(cart.items)}")
-        lines.append(f"   Gesamtpreis: {cart.total_offer_price:.2f}€")
+        lines.append(f"{medal} <b>{cart.supermarket}</b><br>")
+        lines.append(f"&nbsp;&nbsp;&nbsp;Angebote gefunden: {len(cart.items)}<br>")
+        lines.append(f"&nbsp;&nbsp;&nbsp;Gesamtpreis: {cart.total_offer_price:.2f}€<br>")
 
         if cart.total_savings > 0:
             lines.append(
-                f"   💰 Ersparnis: {cart.total_savings:.2f}€ "
-                f"({cart.items_with_savings} Artikel mit bekanntem Regelpreis)"
+                f"&nbsp;&nbsp;&nbsp;💰 Ersparnis: {cart.total_savings:.2f}€ "
+                f"({cart.items_with_savings} Artikel mit bekanntem Regelpreis)<br>"
             )
-        lines.append("")
+        lines.append("<br>")
 
     if ranked_carts:
         best = ranked_carts[0]
-        lines.append(f"✅ <b>Empfehlung: {best.supermarket}</b>")
+        lines.append(f"✅ <b>Empfehlung: {best.supermarket}</b><br>")
         if best.total_savings > 0:
-            lines.append(f"   Diese Woche {best.total_savings:.2f}€ sparen!")
+            lines.append(f"&nbsp;&nbsp;&nbsp;Diese Woche {best.total_savings:.2f}€ sparen!<br>")
 
     pantry_offers: list[tuple[str, list[PriceOffer]]] = [
         (cart.supermarket, cart.items)
@@ -47,7 +47,7 @@ def format_message(
     ]
 
     if pantry_offers:
-        lines.append("\n📦 <b>VORRATS-DEALS (diese Woche im Angebot)</b>")
+        lines.append("<br>📦 <b>VORRATS-DEALS (diese Woche im Angebot)</b><br>")
         seen: set[str] = set()
         all_pantry = [
             (item, market)
@@ -59,30 +59,28 @@ def format_message(
                 seen.add(offer.description)
                 savings_str = f" (spare {offer.savings:.2f}€)" if offer.savings else ""
                 lines.append(
-                    f"   🏷️ {offer.description}: "
-                    f"{offer.offer_price:.2f}€ @ {market}{savings_str}"
+                    f"&nbsp;&nbsp;&nbsp;🏷️ {offer.description}: "
+                    f"{offer.offer_price:.2f}€ @ {market}{savings_str}<br>"
                 )
 
     return "\n".join(lines)
 
 
-def send_telegram(message: str, config: Config) -> bool:
-    url = f"https://api.telegram.org/bot{config.telegram_bot_token}/sendMessage"
+def send_email(message: str, config: Config) -> bool:
+    email = EmailMessage()
+    email["Subject"] = "🛒 Wöchentlicher Preisvergleich"
+    email["From"] = config.smtp_user
+    email["To"] = config.email_to
+    email.set_content("Bitte HTML-fähigen E-Mail-Client verwenden.")
+    email.add_alternative(f"<html><body>{message}</body></html>", subtype="html")
+
     try:
-        response = requests.post(
-            url,
-            json={
-                "chat_id": config.telegram_chat_id,
-                "text": message,
-                "parse_mode": "HTML",
-            },
-            timeout=15,
-        )
-        response.raise_for_status()
-        logger.info("Telegram message sent successfully")
+        with smtplib.SMTP(config.smtp_host, config.smtp_port, timeout=15) as server:
+            server.starttls()
+            server.login(config.smtp_user, config.smtp_password)
+            server.send_message(email)
+        logger.info("Email sent successfully to %s", config.email_to)
         return True
-    except requests.RequestException as exc:
-        logger.error("Failed to send Telegram message: %s", exc)
-        if hasattr(exc, "response") and exc.response is not None:
-            logger.error("Telegram API error: %s", exc.response.text)
+    except (smtplib.SMTPException, OSError) as exc:
+        logger.error("Failed to send email: %s", exc)
         return False

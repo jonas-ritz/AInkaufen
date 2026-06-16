@@ -12,7 +12,7 @@ I built this as a side project to learn more about API integration and AI-powere
 - Scrapes current offers from local supermarkets via Marktguru
 - Uses Claude to match your items to the right offers (so "milk" doesn't match "chocolate milk")
 - Ranks supermarkets by total savings
-- Sends you a WhatsApp summary every Monday morning
+- Sends you an email summary every day
 
 ---
 
@@ -22,7 +22,7 @@ I built this as a side project to learn more about API integration and AI-powere
 - Anthropic Claude API — for semantic product matching
 - Google Sheets API — grocery list input
 - Marktguru API — supermarket offer data
-- Telegram / CallMeBot — weekly notifications
+- SMTP (smtplib) — daily email notifications
 - `ruff` + `mypy` — linting and type checking
 
 ---
@@ -42,10 +42,15 @@ Copy `.env.example` to `.env` and fill in:
 ```
 ANTHROPIC_API_KEY=sk-ant-...
 SHEET_ID=your-google-sheet-id
-CALLMEBOT_PHONE=+49...
-CALLMEBOT_APIKEY=...
+SMTP_USER=your-gmail-address@gmail.com
+SMTP_PASSWORD=your-app-password
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+EMAIL_TO=JonasRitz1998@web.de
 PLZ=52428
 ```
+
+`SMTP_USER`/`SMTP_PASSWORD` are the credentials of the account that *sends* the email (e.g. a Gmail account with an [App Password](https://myaccount.google.com/apppasswords)). `EMAIL_TO` is the recipient address.
 
 Also place your Google Service Account `credentials.json` in the project root and share your Sheet with the service account email.
 
@@ -78,28 +83,16 @@ pytest tests/ -v
 
 ## Automate with GitHub Actions
 
-```yaml
-name: Weekly Price Check
-on:
-  schedule:
-    - cron: '0 8 * * 1'
-jobs:
-  run:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-      - run: pip install -e .
-      - run: python -m Ainkaufen.main
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          SHEET_ID: ${{ secrets.SHEET_ID }}
-          CALLMEBOT_PHONE: ${{ secrets.CALLMEBOT_PHONE }}
-          CALLMEBOT_APIKEY: ${{ secrets.CALLMEBOT_APIKEY }}
-          PLZ: 52428
-```
+Runs daily via [.github/workflows/daily.yml](.github/workflows/daily.yml). Add these repository secrets under
+*Settings → Secrets and variables → Actions*:
+
+- `ANTHROPIC_API_KEY`
+- `SHEET_ID`
+- `GOOGLE_CREDENTIALS` (contents of your `credentials.json`)
+- `SMTP_USER` / `SMTP_PASSWORD` (sender account)
+- `SMTP_HOST` / `SMTP_PORT` (optional, defaults to Gmail's `smtp.gmail.com:587`)
+- `EMAIL_TO` (optional, defaults to `JonasRitz1998@web.de`)
+- `PLZ` (optional)
 
 ---
 
