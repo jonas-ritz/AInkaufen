@@ -18,6 +18,7 @@ def config() -> Config:
         smtp_password="abc",
         sheet_id="sheet-id",
         plz="12345",
+        email_to="test@example.com",
         supermarkets=("Edeka", "Netto", "Kaufland"),
     )
 

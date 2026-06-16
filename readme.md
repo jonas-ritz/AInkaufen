@@ -50,7 +50,7 @@ EMAIL_TO=destination-email-adress
 PLZ=german-postal-code
 ```
 
-`SMTP_USER`/`SMTP_PASSWORD` are the credentials of the account that *sends* the email (e.g. a Gmail account with an [App Password](https://myaccount.google.com/apppasswords)). `EMAIL_TO` is the recipient address.
+`SMTP_USER`/`SMTP_PASSWORD` are the credentials of the account that *sends* the email (e.g. a Gmail account with an [App Password](https://myaccount.google.com/apppasswords)). `EMAIL_TO` and `PLZ` are required — there are no defaults in the source code.
 
 Also place your Google Service Account `credentials.json` in the project root and share your Sheet with the service account email.
 
@@ -91,8 +91,8 @@ Runs daily via [.github/workflows/daily.yml](.github/workflows/daily.yml). Add t
 - `GOOGLE_CREDENTIALS` (contents of your `credentials.json`)
 - `SMTP_USER` / `SMTP_PASSWORD` (sender account)
 - `SMTP_HOST` / `SMTP_PORT` (optional, defaults to Gmail's `smtp.gmail.com:587`)
-- `EMAIL_TO` (optional, defaults to `JonasRitz1998@web.de`)
-- `PLZ` (optional)
+- `EMAIL_TO` (required, recipient address)
+- `PLZ` (required, German postal code for offer scraping)
 
 ---
 
