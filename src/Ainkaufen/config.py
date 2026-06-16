@@ -17,9 +17,9 @@ class Config:
     smtp_password: str
     sheet_id: str
     plz: str
+    email_to: str
     smtp_host: str = "smtp.gmail.com"
     smtp_port: int = 587
-    email_to: str = "JonasRitz1998@web.de"
     supermarkets: tuple[str, ...] = ("Edeka", "Netto", "Kaufland")
     credentials_path: str = "credentials.json"
 
@@ -31,6 +31,8 @@ class Config:
             "SMTP_USER": os.getenv("SMTP_USER"),
             "SMTP_PASSWORD": os.getenv("SMTP_PASSWORD"),
             "SHEET_ID": os.getenv("SHEET_ID"),
+            "PLZ": os.getenv("PLZ"),
+            "EMAIL_TO": os.getenv("EMAIL_TO"),
         }
 
         missing = [key for key, val in required.items() if not val]
@@ -44,8 +46,8 @@ class Config:
             smtp_user=required["SMTP_USER"],  # type: ignore[arg-type]
             smtp_password=required["SMTP_PASSWORD"],  # type: ignore[arg-type]
             sheet_id=required["SHEET_ID"],  # type: ignore[arg-type]
-            plz=os.getenv("PLZ", "52428"),
+            plz=required["PLZ"],  # type: ignore[arg-type]
+            email_to=required["EMAIL_TO"],  # type: ignore[arg-type]
             smtp_host=os.getenv("SMTP_HOST", "smtp.gmail.com"),
             smtp_port=int(os.getenv("SMTP_PORT", "587")),
-            email_to=os.getenv("EMAIL_TO", "JonasRitz1998@web.de"),
         )
