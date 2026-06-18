@@ -58,42 +58,56 @@ def _inline_bold(text: str) -> str:
 
 
 def _markdown_to_html(text: str) -> str:
-    """Convert Markdown (headers, bold, bullet lists, paragraphs) to HTML."""
+    """Convert Markdown (headers, bold, bullet/numbered lists, paragraphs) to HTML."""
     lines = text.splitlines()
     html: list[str] = []
     in_ul = False
+    in_ol = False
 
-    def close_ul() -> None:
-        nonlocal in_ul
+    def close_list() -> None:
+        nonlocal in_ul, in_ol
         if in_ul:
             html.append("</ul>")
             in_ul = False
+        if in_ol:
+            html.append("</ol>")
+            in_ol = False
 
     for line in lines:
         stripped = line.strip()
 
         if stripped.startswith("### "):
-            close_ul()
+            close_list()
             html.append(f"<h3>{_inline_bold(stripped[4:])}</h3>")
         elif stripped.startswith("## "):
-            close_ul()
+            close_list()
             html.append(f"<h2>{_inline_bold(stripped[3:])}</h2>")
         elif stripped.startswith("# "):
-            close_ul()
+            close_list()
             html.append(f"<h1>{_inline_bold(stripped[2:])}</h1>")
         elif stripped.startswith("- ") or stripped.startswith("* "):
+            if in_ol:
+                close_list()
             if not in_ul:
                 html.append("<ul>")
                 in_ul = True
             html.append(f"<li>{_inline_bold(stripped[2:])}</li>")
+        elif re.match(r"^\d+\.\s", stripped):
+            if in_ul:
+                close_list()
+            if not in_ol:
+                html.append("<ol>")
+                in_ol = True
+            item = re.sub(r"^\d+\.\s", "", stripped)
+            html.append(f"<li>{_inline_bold(item)}</li>")
         elif stripped == "":
-            close_ul()
+            close_list()
             # Blank lines between paragraphs — let block elements carry spacing
         else:
-            close_ul()
+            close_list()
             html.append(f"<p>{_inline_bold(stripped)}</p>")
 
-    close_ul()
+    close_list()
     return "\n".join(html)
 
 
