@@ -147,22 +147,32 @@ def generate_digest(config: DigestConfig) -> str:
     block_types = [getattr(b, "type", type(b).__name__) for b in response.content]
     logger.info("Digest: response content block types: %s", block_types)
 
-    # Claude interleaves multiple text blocks with tool-use blocks throughout
-    # the web-search loop — concatenate ALL of them, not just the first one.
-    text_blocks = [
+    # Claude emits intermediate text blocks during the web-search loop
+    # ("Ich suche jetzt nach...", "Ich habe folgendes gefunden...").
+    # The actual digest always appears after the last tool-result block.
+    # Find the index of the last non-text block and take only what follows.
+    last_tool_idx = -1
+    for i, block in enumerate(response.content):
+        if getattr(block, "type", None) != "text":
+            last_tool_idx = i
+
+    final_blocks = [
         b.text  # type: ignore[attr-defined]
-        for b in response.content
+        for b in response.content[last_tool_idx + 1:]
         if getattr(b, "type", None) == "text"
     ]
-    text = "\n\n".join(block.strip() for block in text_blocks if block.strip())
+    text = "\n\n".join(block.strip() for block in final_blocks if block.strip())
 
     if not text:
         logger.error(
-            "Digest: no text blocks found in response. Block types: %s",
+            "Digest: no final text block found after last tool result. Block types: %s",
             block_types,
         )
     else:
-        logger.info("Digest: collected %d text block(s), total length %d chars", len(text_blocks), len(text))
+        logger.info(
+            "Digest: extracted %d final text block(s), %d chars",
+            len(final_blocks), len(text),
+        )
     return text.strip()
 
 
