@@ -1,58 +1,73 @@
 # AInkaufen
 
-A weekly grocery price optimizer that tells you which supermarket saves you the most money.
+A personal daily automation that does two things: tells you which supermarket saves you the most money this week, and sends you a curated AI news digest every morning.
 
-I built this as a side project to learn more about API integration and AI-powered workflows — using Claude as a pair programmer throughout the whole thing.
+Built as a side project to get hands-on experience with real APIs and AI-powered workflows — using Claude as a pair programmer throughout.
 
 ---
 
-## What it does
+## Features
 
-- Reads your grocery list from Google Sheets (checkboxes for what you need this week)
+### 🛒 Daily Price Comparison
+- Reads your grocery list from Google Sheets (checkboxes for what you need this week vs. what to stock up on)
 - Scrapes current offers from local supermarkets via Marktguru
-- Uses Claude to match your items to the right offers (so "milk" doesn't match "chocolate milk")
-- Ranks supermarkets by total savings
-- Sends you an email summary every day
+- Uses Claude to semantically match your items to the right offers — so "Milch" doesn't match "Schokoladenmilch"
+- Ranks supermarkets by total savings, split into weekly shopping and pantry stock
+- Sends a formatted HTML email with per-supermarket breakdowns
+
+### 🤖 Daily AI Digest
+- Fetches the latest AI news from the past 24 hours via Claude's built-in web search
+- Summarises 3–5 relevant stories for software developers (software, society, business — not hardware specs)
+- Includes a rotating "Concept of the Day" explaining one AI technique in depth with analogies and optionally math
+- Sends a separate HTML email every morning
 
 ---
 
 ## Stack
 
-- Python 3.11
-- Anthropic Claude API — for semantic product matching
-- Google Sheets API — grocery list input
-- Marktguru API — supermarket offer data
-- SMTP (smtplib) — daily email notifications
-- `ruff` + `mypy` — linting and type checking
+| Component | Used for |
+|---|---|
+| Python 3.11 | Everything |
+| [Anthropic Claude API](https://docs.anthropic.com) | Semantic product matching · AI digest with web search |
+| Google Sheets API | Grocery list input |
+| Marktguru API | Supermarket offer data |
+| SMTP (`smtplib`) | Email delivery |
+| GitHub Actions | Daily scheduling |
+| `ruff` + `mypy` | Linting and type checking |
 
 ---
 
 ## Setup
 
 ```bash
-git clone https://github.com/yourusername/ainkaufen.git
-cd ainkaufen
+git clone https://github.com/jonas-ritz/AInkaufen.git
+cd AInkaufen
 python -m venv venv
 venv\Scripts\activate
 pip install -e .
 ```
 
-Copy `.env.example` to `.env` and fill in:
+Create a `.env` file in the project root:
 
-```
+```env
+# Claude API
 ANTHROPIC_API_KEY=sk-ant-...
-SHEET_ID=your-google-sheet-id
-SMTP_USER=your-gmail-address@gmail.com
+
+# Email (sender account — needs Gmail App Password)
+SMTP_USER=your-gmail@gmail.com
 SMTP_PASSWORD=your-app-password
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-EMAIL_TO=destination-email-adress
-PLZ=german-postal-code
+SMTP_HOST=smtp.gmail.com   # optional, this is the default
+SMTP_PORT=587               # optional, this is the default
+EMAIL_TO=recipient@example.com
+
+# Price comparison only
+SHEET_ID=your-google-sheet-id
+PLZ=12345
 ```
 
-`SMTP_USER`/`SMTP_PASSWORD` are the credentials of the account that *sends* the email (e.g. a Gmail account with an [App Password](https://myaccount.google.com/apppasswords)). `EMAIL_TO` and `PLZ` are required — there are no defaults in the source code.
+**Gmail App Password:** Go to [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords) and create one. 2-Step Verification must be enabled first.
 
-Also place your Google Service Account `credentials.json` in the project root and share your Sheet with the service account email.
+**Google credentials:** Place your Google Service Account `credentials.json` in the project root and share your Sheet with the service account email.
 
 ---
 
@@ -63,39 +78,83 @@ Also place your Google Service Account `credentials.json` in the project root an
 | Milch | ✅ | Frisch |
 | Nudeln | ☐ | Vorrat |
 
-Checkboxes via Insert → Checkbox. Category is either `Frisch` or `Vorrat`.
+- **Kaufen** — checkbox (Insert → Checkbox). Checked = buy this week.
+- **Kategorie** — either `Frisch` (weekly shopping) or `Vorrat` (pantry stock).
 
 ---
 
-## Run
+## Run locally
 
+**Price comparison:**
 ```bash
 python -m Ainkaufen.main
 ```
 
+**AI digest:**
 ```bash
+python -m Ainkaufen.digest
+```
+
+**Tests & linting:**
+```bash
+pytest tests/ -v
 ruff check src/
 mypy src/
-pytest tests/ -v
 ```
 
 ---
 
 ## Automate with GitHub Actions
 
-Runs daily via [.github/workflows/daily.yml](.github/workflows/daily.yml). Add these repository secrets under
-*Settings → Secrets and variables → Actions*:
+Two independent workflows run daily — no overlap in secrets required:
 
-- `ANTHROPIC_API_KEY`
-- `SHEET_ID`
-- `GOOGLE_CREDENTIALS` (contents of your `credentials.json`)
-- `SMTP_USER` / `SMTP_PASSWORD` (sender account)
-- `SMTP_HOST` / `SMTP_PORT` (optional, defaults to Gmail's `smtp.gmail.com:587`)
-- `EMAIL_TO` (required, recipient address)
-- `PLZ` (required, German postal code for offer scraping)
+| Workflow | Schedule | File |
+|---|---|---|
+| Price comparison | ~06:00 CET | [daily.yml](.github/workflows/daily.yml) |
+| AI digest | ~07:30 CET | [daily-digest.yml](.github/workflows/daily-digest.yml) |
+
+Both can be triggered manually via **Run workflow** in the Actions tab.
+
+### Required secrets
+
+Go to **Settings → Secrets and variables → Actions** and add:
+
+**Shared by both workflows:**
+| Secret | Description |
+|---|---|
+| `ANTHROPIC_API_KEY` | Your Anthropic API key |
+| `SMTP_USER` | Gmail address used to send emails |
+| `SMTP_PASSWORD` | Gmail App Password |
+| `EMAIL_TO` | Recipient email address |
+| `SMTP_HOST` | Optional — defaults to `smtp.gmail.com` |
+| `SMTP_PORT` | Optional — defaults to `587` |
+
+**Price comparison only:**
+| Secret | Description |
+|---|---|
+| `SHEET_ID` | Google Sheets document ID |
+| `PLZ` | Your German postal code (for local offers) |
+| `GOOGLE_CREDENTIALS` | Full contents of your `credentials.json` |
+
+---
+
+## Project structure
+
+```
+src/Ainkaufen/
+├── config.py      # Config and DigestConfig dataclasses
+├── digest.py      # AI digest: Claude web search → email
+├── main.py        # Price comparison entry point
+├── comparator.py  # Cart building and savings ranking
+├── matcher.py     # Claude-powered semantic offer matching
+├── notifier.py    # HTML formatting and email delivery
+├── scraper.py     # Marktguru offer scraping
+├── sheet.py       # Google Sheets integration
+└── models.py      # Shared data models
+```
 
 ---
 
 ## About
 
-Built as a learning project with Claude (Anthropic) as an AI pair programmer. The goal was to get hands-on experience with real APIs, clean Python architecture, and using LLMs as functional components in a pipeline — not just for chat.
+Built as a learning project with Claude (Anthropic) as an AI pair programmer. The goal was hands-on experience with real APIs, clean Python architecture, and using LLMs as functional components in a pipeline — not just for chat.
