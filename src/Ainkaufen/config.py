@@ -9,6 +9,44 @@ load_dotenv()
 
 
 @dataclass(frozen=True)
+class DigestConfig:
+    """Lightweight config for the daily AI digest email.
+
+    Only needs API key + SMTP credentials — no Google Sheets or PLZ.
+    """
+
+    anthropic_api_key: str
+    smtp_user: str
+    smtp_password: str
+    email_to: str
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = 587
+
+    @classmethod
+    def from_env(cls) -> "DigestConfig":
+        """Load and validate digest config from environment variables."""
+        required = {
+            "ANTHROPIC_API_KEY": os.getenv("ANTHROPIC_API_KEY"),
+            "SMTP_USER": os.getenv("SMTP_USER"),
+            "SMTP_PASSWORD": os.getenv("SMTP_PASSWORD"),
+            "EMAIL_TO": os.getenv("EMAIL_TO"),
+        }
+        missing = [key for key, val in required.items() if not val]
+        if missing:
+            raise OSError(
+                f"Missing required environment variables: {', '.join(missing)}"
+            )
+        return cls(
+            anthropic_api_key=required["ANTHROPIC_API_KEY"],  # type: ignore[arg-type]
+            smtp_user=required["SMTP_USER"],  # type: ignore[arg-type]
+            smtp_password=required["SMTP_PASSWORD"],  # type: ignore[arg-type]
+            email_to=required["EMAIL_TO"],  # type: ignore[arg-type]
+            smtp_host=os.getenv("SMTP_HOST") or "smtp.gmail.com",
+            smtp_port=int(os.getenv("SMTP_PORT") or "587"),
+        )
+
+
+@dataclass(frozen=True)
 class Config:
     """Immutable application configuration."""
 

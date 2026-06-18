@@ -1,0 +1,30 @@
+name: Daily AI Digest
+
+on:
+  schedule:
+    - cron: '30 5 * * *'  # Täglich ~07:30 Uhr deutscher Zeit (CET/CEST)
+  workflow_dispatch:       # Manuell auslösbar zum Testen
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -e .
+
+      - name: Run AI digest
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+        run: python -m Ainkaufen.digest

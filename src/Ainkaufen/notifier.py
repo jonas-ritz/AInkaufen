@@ -3,13 +3,23 @@
 import logging
 import smtplib
 from email.message import EmailMessage
+from typing import Protocol
 
-from .config import Config
 from .models import CartSummary
 
 logger = logging.getLogger(__name__)
 
 _MEDALS = ["🥇", "🥈", "🥉", "4️⃣"]
+
+
+class _SMTPConfig(Protocol):
+    """Structural interface satisfied by both Config and DigestConfig."""
+
+    smtp_user: str
+    smtp_password: str
+    smtp_host: str
+    smtp_port: int
+    email_to: str
 
 
 def _offer_line_html(offer: object) -> str:
@@ -91,9 +101,13 @@ def format_message(
     return "\n".join(lines)
 
 
-def send_email(message: str, config: Config) -> bool:
+def send_email(
+    message: str,
+    config: _SMTPConfig,
+    subject: str = "🛒 Täglicher Preisvergleich",
+) -> bool:
     email = EmailMessage()
-    email["Subject"] = "🛒 Täglicher Preisvergleich"
+    email["Subject"] = subject
     email["From"] = config.smtp_user
     email["To"] = config.email_to
     email.set_content("Bitte HTML-fähigen E-Mail-Client verwenden.")
