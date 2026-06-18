@@ -81,7 +81,9 @@ def main() -> None:
     # Send email notification
     message = format_message(ranked, pantry_carts)
     logger.info("Sending email notification to %s", config.email_to)
-    send_email(message, config)
+    if not send_email(message, config):
+        logger.error("Email notification failed")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
