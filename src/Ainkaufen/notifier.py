@@ -55,10 +55,17 @@ def format_message(
         medal = _MEDALS[i] if i < len(_MEDALS) else "•"
         pantry = pantry_by_market.get(cart.supermarket)
 
-        total_savings = cart.total_savings + (pantry.total_savings if pantry else 0)
-        savings_str = f"&nbsp;💰 spare {total_savings:.2f}€" if total_savings > 0 else ""
+        shopping_savings = cart.total_savings
+        pantry_savings = pantry.total_savings if pantry else 0
+        total_savings = shopping_savings + pantry_savings
 
-        lines.append(f"{medal} <b>{cart.supermarket.upper()}</b>{savings_str}<br>")
+        lines.append(f"{medal} <b>{cart.supermarket.upper()}</b><br>")
+        if total_savings > 0:
+            lines.append(
+                f"&nbsp;&nbsp;&nbsp;💰 Gesamt: <b>{total_savings:.2f}€</b>"
+                f"&nbsp;&nbsp;|&nbsp;&nbsp;🛍️ Einkauf: {shopping_savings:.2f}€"
+                f"&nbsp;&nbsp;|&nbsp;&nbsp;📦 Vorrat: {pantry_savings:.2f}€<br>"
+            )
 
         if cart.items:
             lines.append("&nbsp;&nbsp;&nbsp;🛍️ <u>Wocheneinkauf</u><br>")

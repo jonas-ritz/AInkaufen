@@ -49,9 +49,12 @@ def main() -> None:
     for i, cart in enumerate(ranked):
         medal = medals[i] if i < len(medals) else "•"
         pantry = pantry_by_market.get(cart.supermarket)
-        total_savings = cart.total_savings + (pantry.total_savings if pantry else 0)
+        shopping_savings = cart.total_savings
+        pantry_savings = pantry.total_savings if pantry else 0
+        total_savings = shopping_savings + pantry_savings
 
-        print(f"\n{medal} {cart.supermarket.upper()}  —  spare {total_savings:.2f}€")
+        print(f"\n{medal} {cart.supermarket.upper()}")
+        print(f"   💰 Gesamt: {total_savings:.2f}€  |  🛍️ Einkauf: {shopping_savings:.2f}€  |  📦 Vorrat: {pantry_savings:.2f}€")
         print("-" * 40)
 
         if cart.items:
