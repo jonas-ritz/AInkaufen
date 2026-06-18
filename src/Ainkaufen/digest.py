@@ -143,11 +143,21 @@ def generate_digest(config: DigestConfig) -> str:
     if response is None:
         raise RuntimeError("Claude API returned no response")
 
-    # Extract the text block (ignore thinking / tool_result blocks)
+    # Log all content block types to help debug unexpected responses
+    block_types = [getattr(b, "type", type(b).__name__) for b in response.content]
+    logger.info("Digest: response content block types: %s", block_types)
+
+    # Extract the text block — explicitly filter by type to ignore tool_use /
+    # tool_result / thinking blocks that also carry attributes named "text"
     text = next(
-        (block.text for block in response.content if hasattr(block, "text")),
+        (b.text for b in response.content if getattr(b, "type", None) == "text"),  # type: ignore[attr-defined]
         "",
     )
+    if not text:
+        logger.error(
+            "Digest: no text block found in response. Full content: %s",
+            response.content,
+        )
     return text.strip()
 
 
