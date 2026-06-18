@@ -40,7 +40,11 @@ Halte die Gesamtlänge bei etwa 500 Wörtern.
 Formatiere das Ganze als gut lesbares Digest mit einem Abschnitt "News" und \
 anschließend einem Abschnitt "Concept of the Day" (Konzept des Tages). Falls keine \
 bedeutenden Nachrichten verfügbar sind, vermerke dies kurz und füge dennoch die \
-Konzepterklärung hinzu.\
+Konzepterklärung hinzu.
+
+Wichtig: Beginne deine Antwort sofort mit dem Digest-Inhalt. Kein Vorwort, keine \
+Zusammenfassung deines Vorgehens, kein "Ich habe genug Material gesammelt" oder \
+ähnliche Meta-Kommentare. Direkt mit dem ersten News-Abschnitt starten.\
 """
 
 # ---------------------------------------------------------------------------
