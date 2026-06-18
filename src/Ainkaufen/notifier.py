@@ -109,8 +109,14 @@ def send_email(
     email["Subject"] = subject
     email["From"] = config.smtp_user
     email["To"] = config.email_to
+    html = (
+        "<html><body style=\"font-family:sans-serif;max-width:640px;"
+        "margin:0 auto;padding:24px;color:#1a1a1a;line-height:1.6\">"
+        f"{message}"
+        "</body></html>"
+    )
     email.set_content("Bitte HTML-fähigen E-Mail-Client verwenden.")
-    email.add_alternative(f"<html><body>{message}</body></html>", subtype="html")
+    email.add_alternative(html, subtype="html")
 
     try:
         with smtplib.SMTP(config.smtp_host, config.smtp_port, timeout=15) as server:
