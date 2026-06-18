@@ -147,17 +147,22 @@ def generate_digest(config: DigestConfig) -> str:
     block_types = [getattr(b, "type", type(b).__name__) for b in response.content]
     logger.info("Digest: response content block types: %s", block_types)
 
-    # Extract the text block — explicitly filter by type to ignore tool_use /
-    # tool_result / thinking blocks that also carry attributes named "text"
-    text = next(
-        (b.text for b in response.content if getattr(b, "type", None) == "text"),  # type: ignore[attr-defined]
-        "",
-    )
+    # Claude interleaves multiple text blocks with tool-use blocks throughout
+    # the web-search loop — concatenate ALL of them, not just the first one.
+    text_blocks = [
+        b.text  # type: ignore[attr-defined]
+        for b in response.content
+        if getattr(b, "type", None) == "text"
+    ]
+    text = "\n\n".join(block.strip() for block in text_blocks if block.strip())
+
     if not text:
         logger.error(
-            "Digest: no text block found in response. Full content: %s",
-            response.content,
+            "Digest: no text blocks found in response. Block types: %s",
+            block_types,
         )
+    else:
+        logger.info("Digest: collected %d text block(s), total length %d chars", len(text_blocks), len(text))
     return text.strip()
 
 
