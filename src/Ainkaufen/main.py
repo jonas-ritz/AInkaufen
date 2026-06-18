@@ -38,45 +38,37 @@ def main() -> None:
     pantry_carts = rank_by_savings(build_carts(pantry_items, config))
 
     # Print summary to terminal
+    pantry_by_market = {cart.supermarket: cart for cart in pantry_carts}
+    medals = ["🥇", "🥈", "🥉", "4️⃣"]
+
     print("\n" + "=" * 60)
-    print("WEEKLY GROCERY PRICE COMPARISON")
+    print("TÄGLICHER PREISVERGLEICH")
     print("Ranking: Supermarkt mit den höchsten Ersparnissen zuerst")
-    print("(Summe aller Rabatte: Regelpreis minus Angebotspreis)")
     print("=" * 60)
 
     for i, cart in enumerate(ranked):
-        medals = ["🥇", "🥈", "🥉", "4️⃣"]
         medal = medals[i] if i < len(medals) else "•"
-        print(f"\n{medal} {cart.supermarket.upper()}")
-        print(f"   Items found:  {len(cart.items)}")
-        print(f"   Total price:  {cart.total_offer_price:.2f}€")
-        print(f"   Total savings: {cart.total_savings:.2f}€")
-        print("-" * 40)
-        for offer in cart.items:
-            savings_str = f"  save {offer.savings:.2f}€" if offer.savings else ""
-            regular_str = f"was {offer.regular_price:.2f}€  " if offer.regular_price else ""
-            print(f"   🏷️  {offer.description:<30} {offer.offer_price:.2f}€  {regular_str}{savings_str}")
+        pantry = pantry_by_market.get(cart.supermarket)
+        total_savings = cart.total_savings + (pantry.total_savings if pantry else 0)
 
-    # Print pantry deals to terminal
-    print("\n" + "=" * 60)
-    print("VORRATS-DEALS (diese Woche im Angebot)")
-    print("Ranking: Supermarkt mit den höchsten Ersparnissen zuerst")
-    print("=" * 60)
-    if pantry_carts:
-        for i, cart in enumerate(pantry_carts):
-            medals = ["🥇", "🥈", "🥉", "4️⃣"]
-            medal = medals[i] if i < len(medals) else "•"
-            print(f"\n{medal} {cart.supermarket.upper()}")
-            print(f"   Deals gefunden:  {len(cart.items)}")
-            print(f"   Gesamtpreis:     {cart.total_offer_price:.2f}€")
-            print(f"   Gesamtersparnis: {cart.total_savings:.2f}€")
-            print("-" * 40)
+        print(f"\n{medal} {cart.supermarket.upper()}  —  spare {total_savings:.2f}€")
+        print("-" * 40)
+
+        if cart.items:
+            print("   🛍️  Wocheneinkauf:")
             for offer in cart.items:
                 savings_str = f"  spare {offer.savings:.2f}€" if offer.savings else ""
-                regular_str = f"war {offer.regular_price:.2f}€  " if offer.regular_price else ""
-                print(f"   🏷️  {offer.description:<30} {offer.offer_price:.2f}€  {regular_str}{savings_str}")
-    else:
-        print("\nKeine Vorrats-Deals diese Woche gefunden.")
+                regular_str = f"(war {offer.regular_price:.2f}€)  " if offer.regular_price else ""
+                print(f"      🏷️  {offer.description:<30} {offer.offer_price:.2f}€  {regular_str}{savings_str}")
+        else:
+            print("   Keine passenden Angebote diese Woche.")
+
+        if pantry and pantry.items:
+            print("   📦  Vorrat:")
+            for offer in pantry.items:
+                savings_str = f"  spare {offer.savings:.2f}€" if offer.savings else ""
+                regular_str = f"(war {offer.regular_price:.2f}€)  " if offer.regular_price else ""
+                print(f"      🏷️  {offer.description:<30} {offer.offer_price:.2f}€  {regular_str}{savings_str}")
 
     # Send email notification
     message = format_message(ranked, pantry_carts)

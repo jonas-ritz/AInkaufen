@@ -5,70 +5,88 @@ import smtplib
 from email.message import EmailMessage
 
 from .config import Config
-from .models import CartSummary, PriceOffer
+from .models import CartSummary
 
 logger = logging.getLogger(__name__)
 
 _MEDALS = ["🥇", "🥈", "🥉", "4️⃣"]
 
 
+def _offer_line_html(offer: object) -> str:
+    """Render one PriceOffer as an HTML line."""
+    regular = f"&nbsp;<s>{offer.regular_price:.2f}€</s>" if offer.regular_price else ""  # type: ignore[attr-defined]
+    savings = f"&nbsp;<b>spare {offer.savings:.2f}€</b>" if offer.savings else ""  # type: ignore[attr-defined]
+    return (
+        f"&nbsp;&nbsp;&nbsp;&nbsp;🏷️ {offer.description}"  # type: ignore[attr-defined]
+        f"&nbsp;&nbsp;{offer.offer_price:.2f}€{regular}{savings}<br>"  # type: ignore[attr-defined]
+    )
+
+
+def _all_markets_ordered(
+    ranked_carts: list[CartSummary],
+    pantry_by_market: dict[str, CartSummary],
+) -> list[tuple[int, CartSummary]]:
+    """Return (medal_index, shopping_cart) for every market, ranked first."""
+    seen: set[str] = set()
+    result: list[tuple[int, CartSummary]] = []
+    for i, cart in enumerate(ranked_carts):
+        result.append((i, cart))
+        seen.add(cart.supermarket)
+    # markets that only have pantry deals (no shopping items)
+    for cart in pantry_by_market.values():
+        if cart.supermarket not in seen:
+            result.append((len(result), CartSummary(supermarket=cart.supermarket)))
+    return result
+
+
 def format_message(
     ranked_carts: list[CartSummary],
     pantry_carts: list[CartSummary],
 ) -> str:
+    pantry_by_market = {cart.supermarket: cart for cart in pantry_carts}
+    markets = _all_markets_ordered(ranked_carts, pantry_by_market)
+
     lines: list[str] = [
-        "🛒 <b>WEEKLY PRICE COMPARISON</b>",
-        "<i>Ranking nach höchster Gesamtersparnis (Regelpreis - Angebotspreis)</i><br><br>",
+        "🛒 <b>TÄGLICHER PREISVERGLEICH</b>",
+        "<i>Ranking nach höchster Gesamtersparnis</i><br><br>",
     ]
 
-    for i, cart in enumerate(ranked_carts):
+    for i, cart in markets:
         medal = _MEDALS[i] if i < len(_MEDALS) else "•"
-        lines.append(f"{medal} <b>{cart.supermarket}</b><br>")
-        lines.append(f"&nbsp;&nbsp;&nbsp;Angebote gefunden: {len(cart.items)}<br>")
-        lines.append(f"&nbsp;&nbsp;&nbsp;Gesamtpreis: {cart.total_offer_price:.2f}€<br>")
+        pantry = pantry_by_market.get(cart.supermarket)
 
-        if cart.total_savings > 0:
-            lines.append(
-                f"&nbsp;&nbsp;&nbsp;💰 Ersparnis: {cart.total_savings:.2f}€ "
-                f"({cart.items_with_savings} Artikel mit bekanntem Regelpreis)<br>"
-            )
+        total_savings = cart.total_savings + (pantry.total_savings if pantry else 0)
+        savings_str = f"&nbsp;💰 spare {total_savings:.2f}€" if total_savings > 0 else ""
+
+        lines.append(f"{medal} <b>{cart.supermarket.upper()}</b>{savings_str}<br>")
+
+        if cart.items:
+            lines.append("&nbsp;&nbsp;&nbsp;🛍️ <u>Wocheneinkauf</u><br>")
+            for offer in cart.items:
+                lines.append(_offer_line_html(offer))
+        else:
+            lines.append("&nbsp;&nbsp;&nbsp;<i>Keine passenden Angebote diese Woche.</i><br>")
+
+        if pantry and pantry.items:
+            lines.append("&nbsp;&nbsp;&nbsp;📦 <u>Vorrat</u><br>")
+            for offer in pantry.items:
+                lines.append(_offer_line_html(offer))
+
         lines.append("<br>")
 
     if ranked_carts:
         best = ranked_carts[0]
-        lines.append(f"✅ <b>Empfehlung: {best.supermarket}</b><br>")
-        if best.total_savings > 0:
-            lines.append(f"&nbsp;&nbsp;&nbsp;Diese Woche {best.total_savings:.2f}€ sparen!<br>")
-
-    pantry_offers: list[tuple[str, list[PriceOffer]]] = [
-        (cart.supermarket, cart.items)
-        for cart in pantry_carts
-        if cart.items
-    ]
-
-    if pantry_offers:
-        lines.append("<br>📦 <b>VORRATS-DEALS (diese Woche im Angebot)</b><br>")
-        seen: set[str] = set()
-        all_pantry = [
-            (item, market)
-            for market, items in pantry_offers
-            for item in items
-        ]
-        for offer, market in sorted(all_pantry, key=lambda x: x[0].offer_price):
-            if offer.description not in seen:
-                seen.add(offer.description)
-                savings_str = f" (spare {offer.savings:.2f}€)" if offer.savings else ""
-                lines.append(
-                    f"&nbsp;&nbsp;&nbsp;🏷️ {offer.description}: "
-                    f"{offer.offer_price:.2f}€ @ {market}{savings_str}<br>"
-                )
+        best_pantry = pantry_by_market.get(best.supermarket)
+        total_best = best.total_savings + (best_pantry.total_savings if best_pantry else 0)
+        savings_note = f"&nbsp;— diese Woche {total_best:.2f}€ sparen!" if total_best > 0 else ""
+        lines.append(f"✅ <b>Empfehlung: {best.supermarket}</b>{savings_note}<br>")
 
     return "\n".join(lines)
 
 
 def send_email(message: str, config: Config) -> bool:
     email = EmailMessage()
-    email["Subject"] = "🛒 Wöchentlicher Preisvergleich"
+    email["Subject"] = "🛒 Täglicher Preisvergleich"
     email["From"] = config.smtp_user
     email["To"] = config.email_to
     email.set_content("Bitte HTML-fähigen E-Mail-Client verwenden.")
