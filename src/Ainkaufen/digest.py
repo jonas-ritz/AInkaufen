@@ -3,6 +3,7 @@
 import logging
 import re
 import sys
+from datetime import date
 
 import anthropic
 
@@ -211,8 +212,10 @@ def main() -> None:
 
     digest_html = _markdown_to_html(digest_text)
 
+    today = date.today().strftime("%-d. %B %Y")
+    subject = f"🤖 KI-Digest – {today}"
     logger.info("Sending digest email to %s", config.email_to)
-    if not send_email(digest_html, config, subject="🤖 Dein tägliches KI-Digest"):
+    if not send_email(digest_html, config, subject=subject):
         logger.error("Failed to send digest email")
         sys.exit(1)
 
