@@ -112,7 +112,7 @@ def _latex_to_img(latex: str, block: bool = False) -> str:
     """Render a LaTeX expression to a base64-embedded PNG <img> tag."""
     try:
         fig = plt.figure(figsize=(0.01, 0.01))
-        fig.text(0, 0, f"${latex}$", fontsize=13 if block else 11, color="#1a1a1a")
+        fig.text(0, 0, f"${latex}$", fontsize=13 if block else 11, color="white")
         buf = io.BytesIO()
         fig.savefig(buf, format="png", bbox_inches="tight",
                     pad_inches=0.06, dpi=150, transparent=True)
