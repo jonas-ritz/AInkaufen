@@ -12,7 +12,8 @@ Built as a side project to get hands-on experience with real APIs and AI-powered
 - Reads your grocery list from Google Sheets (checkboxes for what you need this week vs. what to stock up on)
 - Scrapes current offers from local supermarkets via Marktguru
 - Uses Claude to semantically match your items to the right offers — so "Milch" doesn't match "Schokoladenmilch"
-- Ranks supermarkets by total savings, split into weekly shopping and pantry stock
+- Ranks supermarkets by total offer volume — the supermarket with the highest sum of offer prices wins, under the assumption that a uniform discount rate means higher offer values translate directly to higher absolute savings
+- Split into weekly shopping and pantry stock
 - Sends a formatted HTML email with per-supermarket breakdowns
 
 ### 🤖 Daily AI Digest
@@ -145,7 +146,7 @@ src/Ainkaufen/
 ├── config.py      # Config and DigestConfig dataclasses
 ├── digest.py      # AI digest: Claude web search → email
 ├── main.py        # Price comparison entry point
-├── comparator.py  # Cart building and savings ranking
+├── comparator.py  # Cart building and offer-volume ranking
 ├── matcher.py     # Claude-powered semantic offer matching
 ├── notifier.py    # HTML formatting and email delivery
 ├── scraper.py     # Marktguru offer scraping

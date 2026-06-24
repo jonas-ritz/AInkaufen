@@ -3,7 +3,7 @@
 import logging
 import sys
 
-from .comparator import build_carts, rank_by_savings
+from .comparator import build_carts, rank_by_offer_volume
 from .config import Config
 from .notifier import format_message, send_email
 from .sheet import load_grocery_list
@@ -32,10 +32,10 @@ def main() -> None:
     # Build price comparisons
     logger.info("Building carts for %d items to buy", len(items_to_buy))
     shopping_carts = build_carts(items_to_buy, config)
-    ranked = rank_by_savings(shopping_carts)
+    ranked = rank_by_offer_volume(shopping_carts)
 
     logger.info("Building carts for %d pantry items", len(pantry_items))
-    pantry_carts = rank_by_savings(build_carts(pantry_items, config))
+    pantry_carts = rank_by_offer_volume(build_carts(pantry_items, config))
 
     # Print summary to terminal
     pantry_by_market = {cart.supermarket: cart for cart in pantry_carts}
@@ -43,35 +43,31 @@ def main() -> None:
 
     print("\n" + "=" * 60)
     print("TÄGLICHER PREISVERGLEICH")
-    print("Ranking: Supermarkt mit den höchsten Ersparnissen zuerst")
+    print("Ranking: Supermarkt mit dem höchsten Angebotsvolumen zuerst")
     print("=" * 60)
 
     for i, cart in enumerate(ranked):
         medal = medals[i] if i < len(medals) else "•"
         pantry = pantry_by_market.get(cart.supermarket)
-        shopping_savings = cart.total_savings
-        pantry_savings = pantry.total_savings if pantry else 0
-        total_savings = shopping_savings + pantry_savings
+        shopping_price = cart.total_offer_price
+        pantry_price = pantry.total_offer_price if pantry else 0.0
+        total_price = shopping_price + pantry_price
 
         print(f"\n{medal} {cart.supermarket.upper()}")
-        print(f"   💰 Gesamt: {total_savings:.2f}€  |  🛍️ Einkauf: {shopping_savings:.2f}€  |  📦 Vorrat: {pantry_savings:.2f}€")
+        print(f"   💰 Gesamt: {total_price:.2f}€  |  🛍️ Einkauf: {shopping_price:.2f}€  |  📦 Vorrat: {pantry_price:.2f}€")
         print("-" * 40)
 
         if cart.items:
             print("   🛍️  Wocheneinkauf:")
             for offer in cart.items:
-                savings_str = f"  spare {offer.savings:.2f}€" if offer.savings else ""
-                regular_str = f"(war {offer.regular_price:.2f}€)  " if offer.regular_price else ""
-                print(f"      🏷️  {offer.description:<30} {offer.offer_price:.2f}€  {regular_str}{savings_str}")
+                print(f"      🏷️  {offer.description:<30} {offer.offer_price:.2f}€")
         else:
             print("   Keine passenden Angebote diese Woche.")
 
         if pantry and pantry.items:
             print("   📦  Vorrat:")
             for offer in pantry.items:
-                savings_str = f"  spare {offer.savings:.2f}€" if offer.savings else ""
-                regular_str = f"(war {offer.regular_price:.2f}€)  " if offer.regular_price else ""
-                print(f"      🏷️  {offer.description:<30} {offer.offer_price:.2f}€  {regular_str}{savings_str}")
+                print(f"      🏷️  {offer.description:<30} {offer.offer_price:.2f}€")
 
     # Send email notification
     message = format_message(ranked, pantry_carts)

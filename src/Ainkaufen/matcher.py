@@ -26,9 +26,7 @@ def match_best_offers(
         return {market: None for market in config.supermarkets}
 
     offers_text = "\n".join(
-        f"{i + 1}. {o.supermarket}: {o.offer_price:.2f}€"
-        + (f" (regular: {o.regular_price:.2f}€)" if o.regular_price else "")
-        + f" — {o.description}"
+        f"{i + 1}. {o.supermarket}: {o.offer_price:.2f}€ — {o.description}"
         for i, o in enumerate(offers)
     )
 

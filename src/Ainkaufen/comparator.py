@@ -45,10 +45,13 @@ def build_carts(
     return carts
 
 
-def rank_by_savings(carts: dict[str, CartSummary]) -> list[CartSummary]:
+def rank_by_offer_volume(carts: dict[str, CartSummary]) -> list[CartSummary]:
     """
-    Rank supermarkets by total savings descending, then by total price ascending.
-    Markets with no matching offers are excluded.
+    Rank supermarkets by total offer volume (sum of offer prices) descending.
+
+    The assumption is a uniform discount rate across all products: a higher total
+    offer price means higher absolute savings, regardless of which regular prices
+    the supermarket would otherwise charge.  Markets with no matching offers are excluded.
     """
     active = [c for c in carts.values() if c.items]
-    return sorted(active, key=lambda c: c.total_savings, reverse=True)
+    return sorted(active, key=lambda c: c.total_offer_price, reverse=True)

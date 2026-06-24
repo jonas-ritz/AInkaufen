@@ -24,11 +24,9 @@ class _SMTPConfig(Protocol):
 
 def _offer_line_html(offer: object) -> str:
     """Render one PriceOffer as an HTML line."""
-    regular = f"&nbsp;<s>{offer.regular_price:.2f}€</s>" if offer.regular_price else ""  # type: ignore[attr-defined]
-    savings = f"&nbsp;<b>spare {offer.savings:.2f}€</b>" if offer.savings else ""  # type: ignore[attr-defined]
     return (
         f"&nbsp;&nbsp;&nbsp;&nbsp;🏷️ {offer.description}"  # type: ignore[attr-defined]
-        f"&nbsp;&nbsp;{offer.offer_price:.2f}€{regular}{savings}<br>"  # type: ignore[attr-defined]
+        f"&nbsp;&nbsp;{offer.offer_price:.2f}€<br>"  # type: ignore[attr-defined]
     )
 
 
@@ -58,22 +56,22 @@ def format_message(
 
     lines: list[str] = [
         "🛒 <b>TÄGLICHER PREISVERGLEICH</b>",
-        "<i>Ranking nach höchster Gesamtersparnis</i><br><br>",
+        "<i>Ranking nach höchstem Angebotsvolumen</i><br><br>",
     ]
 
     for i, cart in markets:
         medal = _MEDALS[i] if i < len(_MEDALS) else "•"
         pantry = pantry_by_market.get(cart.supermarket)
 
-        shopping_savings = cart.total_savings
-        pantry_savings = pantry.total_savings if pantry else 0
-        total_savings = shopping_savings + pantry_savings
+        shopping_price = cart.total_offer_price
+        pantry_price = pantry.total_offer_price if pantry else 0.0
+        total_price = shopping_price + pantry_price
 
         lines.append(f"{medal} <b>{cart.supermarket.upper()}</b><br>")
         lines.append(
-            f"&nbsp;&nbsp;&nbsp;💰 Gesamt: <b>{total_savings:.2f}€</b>"
-            f"&nbsp;&nbsp;|&nbsp;&nbsp;🛍️ Einkauf: {shopping_savings:.2f}€"
-            f"&nbsp;&nbsp;|&nbsp;&nbsp;📦 Vorrat: {pantry_savings:.2f}€<br>"
+            f"&nbsp;&nbsp;&nbsp;💰 Gesamt: <b>{total_price:.2f}€</b>"
+            f"&nbsp;&nbsp;|&nbsp;&nbsp;🛍️ Einkauf: {shopping_price:.2f}€"
+            f"&nbsp;&nbsp;|&nbsp;&nbsp;📦 Vorrat: {pantry_price:.2f}€<br>"
         )
 
         if cart.items:
@@ -93,9 +91,9 @@ def format_message(
     if ranked_carts:
         best = ranked_carts[0]
         best_pantry = pantry_by_market.get(best.supermarket)
-        total_best = best.total_savings + (best_pantry.total_savings if best_pantry else 0)
-        savings_note = f"&nbsp;— diese Woche {total_best:.2f}€ sparen!" if total_best > 0 else ""
-        lines.append(f"✅ <b>Empfehlung: {best.supermarket}</b>{savings_note}<br>")
+        total_best_price = best.total_offer_price + (best_pantry.total_offer_price if best_pantry else 0)
+        note = f"&nbsp;— höchstes Angebotsvolumen ({total_best_price:.2f}€)" if total_best_price > 0 else ""
+        lines.append(f"✅ <b>Empfehlung: {best.supermarket}</b>{note}<br>")
 
     return "\n".join(lines)
 

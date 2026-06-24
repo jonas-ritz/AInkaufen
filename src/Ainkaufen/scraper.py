@@ -64,7 +64,6 @@ def fetch_offers(item_name: str, config: Config) -> list[PriceOffer]:
         if offer_price is None:
             continue
 
-        regular_price = result.get("regularPrice")
         product_name = (result.get("product") or {}).get("name", "")
         brand_name = (result.get("brand") or {}).get("name", "")
         # Skip placeholder brand
@@ -78,7 +77,6 @@ def fetch_offers(item_name: str, config: Config) -> list[PriceOffer]:
                     supermarket=market,
                     description=description,
                     offer_price=float(offer_price),
-                    regular_price=float(regular_price) if regular_price else None,
                 )
             )
 
