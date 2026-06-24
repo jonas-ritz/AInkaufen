@@ -13,28 +13,97 @@ from .notifier import send_email
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Prompt (user-defined — do not change without user approval)
+# Rotating concept list — one per day, cycles every len(_CONCEPTS) days
 # ---------------------------------------------------------------------------
 
-_DIGEST_PROMPT = """\
+_CONCEPTS = [
+    "Transformer-Architektur (wie Encoder und Decoder zusammenspielen)",
+    "Self-Attention und Multi-Head-Attention",
+    "Positional Encoding (wie Reihenfolge ins Modell kommt)",
+    "Tokenisierung: BPE und WordPiece",
+    "Next-Token-Prediction und Autoregressive Generation",
+    "Temperature, Top-P und Top-K Sampling",
+    "RLHF – Reinforcement Learning from Human Feedback",
+    "Constitutional AI und AI-Selbstkritik",
+    "Retrieval-Augmented Generation (RAG)",
+    "Vektorembeddings und semantische Ähnlichkeit",
+    "Finetuning vs. Pre-Training",
+    "LoRA – Low-Rank Adaptation",
+    "Quantisierung von Sprachmodellen",
+    "Mixture of Experts (MoE)",
+    "Skalierungsgesetze (Scaling Laws)",
+    "Emergente Fähigkeiten großer Modelle",
+    "Chain-of-Thought Prompting",
+    "Prompt Injection und Jailbreaking",
+    "KV-Cache und Inferenzoptimierung",
+    "Flash Attention",
+    "Spekulatives Dekodieren (Speculative Decoding)",
+    "PEFT – Parameter-Efficient Fine-Tuning",
+    "Modell-Destillation (Knowledge Distillation)",
+    "Diffusionsmodelle (Stable Diffusion, DALL-E)",
+    "Multimodale Modelle (Text + Bild + Audio)",
+    "AI Agents und Tool Use",
+    "Function Calling / Structured Outputs",
+    "Multi-Agent-Systeme",
+    "Kontextfenster und Long-Context-Modelle",
+    "Halluzinationen und Grounding",
+    "AI Safety und Alignment",
+    "Reinforcement Learning Grundlagen für LLMs",
+    "GRPO und moderne RL-Algorithmen für Sprachmodelle",
+    "Extended Thinking / Latentes Denken in Modellen",
+    "Wissensgraphen und hybride KI-Systeme",
+    "Semantische Suche und Embedding-Datenbanken",
+    "Sparse Attention und effiziente Transformer",
+    "Residual Connections und Layer Normalization",
+    "Cross-Attention (z. B. in Encoder-Decoder-Modellen)",
+    "Computer Use und GUI-Agenten",
+    "Prompt Caching und Kosten­optimierung bei API-Nutzung",
+    "Benchmarks und Evaluierung von Sprachmodellen",
+    "Wasserzeichen und Erkennung von KI-Inhalten",
+    "Text-to-Speech und Speech-to-Text Modelle",
+    "Reinforcement Learning aus menschlichem Feedback (detailliert: Reward Model)",
+    "Instruction Following und System Prompts",
+    "Sprachmodelle als Code-Generatoren (Copilot-Ära)",
+    "AI in der Softwareentwicklung: Agentische Coding-Workflows",
+    "Federated Learning und Datenschutz",
+    "Neurales Information Retrieval",
+    "Multimodale Embeddings",
+    "AI-Regulierung: EU AI Act und globale Entwicklungen",
+]
+
+
+def _concept_of_day() -> str:
+    """Pick today's concept deterministically from the rotation list."""
+    return _CONCEPTS[date.today().toordinal() % len(_CONCEPTS)]
+
+
+# ---------------------------------------------------------------------------
+# Prompt builder
+# ---------------------------------------------------------------------------
+
+def _build_prompt() -> str:
+    today_str = date.today().strftime("%d. %B %Y")
+    concept = _concept_of_day()
+    return f"""\
+Heute ist der {today_str}.
+
 Erstelle ein tägliches KI-Nachrichten- und Lern-Digest für einen Softwareentwickler.
 
-Sammle die neuesten KI-Nachrichten der letzten 24 Stunden – einschließlich technischer \
-Durchbrüche, Modellveröffentlichungen, Branchenentwicklungen und Forschungsarbeiten. \
-Halte die Balance zwischen technischer Tiefe und gesellschaftlicher Relevanz. Es sollte \
-nicht zu tiefgehend sein, ein hohes Niveau (Überblick) genügt. Dabei soll es nicht im \
-Detail um Hardware gehen: es soll um die Software gehen, gesellschaftliche und \
-geschäftliche Entwicklungen.
+Suche nach den neuesten KI-Nachrichten von heute ({today_str}) und den letzten 24 Stunden \
+– einschließlich technischer Durchbrüche, Modellveröffentlichungen, Branchenentwicklungen \
+und Forschungsarbeiten. Halte die Balance zwischen technischer Tiefe und gesellschaftlicher \
+Relevanz. Es sollte nicht zu tiefgehend sein, ein hohes Niveau (Überblick) genügt. \
+Dabei soll es nicht im Detail um Hardware gehen: es soll um die Software gehen, \
+gesellschaftliche und geschäftliche Entwicklungen.
 
 Fasse 3–5 wichtige Meldungen in jeweils 2–3 Sätzen zusammen, geschrieben für einen \
 Entwickler, der beruflich auf dem Laufenden und auf dem Arbeitsmarkt wettbewerbsfähig \
 bleiben möchte. Aber eher die großen, wesentlichen Dinge.
 
-Wähle ein wichtiges KI-Konzept oder eine Technik aus (z. B. Attention-Mechanismen, \
-Retrieval-Augmented Generation, Quantisierung, Constitutional AI) und erkläre es klar \
-und verständlich in 150–200 Wörtern – verwende Analogien und Beispiele, die für einen \
-Softwareentwickler nachvollziehbar sind. Beginne mit einigen Grundkonzepten, es darf \
-auch mathematisch sein. Das Konzept soll jeden Tag ein anderes sein.
+Das heutige Konzept des Tages ist: **{concept}**
+Erkläre genau dieses Konzept klar und verständlich in 150–200 Wörtern – verwende \
+Analogien und Beispiele, die für einen Softwareentwickler nachvollziehbar sind. \
+Es darf auch mathematisch sein.
 
 Halte die Gesamtlänge bei etwa 500 Wörtern.
 
@@ -128,7 +197,7 @@ def generate_digest(config: DigestConfig) -> str:
     client = anthropic.Anthropic(api_key=config.anthropic_api_key)
 
     messages: list[dict[str, object]] = [
-        {"role": "user", "content": _DIGEST_PROMPT}
+        {"role": "user", "content": _build_prompt()}
     ]
     tools = [{"type": "web_search_20260209", "name": "web_search"}]
 
