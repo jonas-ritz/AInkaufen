@@ -62,8 +62,10 @@ Respond with JSON only, no preamble:
         # Strip optional fenced code block
         text = text.removeprefix("```json").removeprefix("```").removesuffix("```").strip()
         matches: dict[str, dict | None] = json.loads(text)
-    except (anthropic.APIError, json.JSONDecodeError) as exc:
-        logger.warning("Matching failed for '%s': %s", item_name, exc)
+    except anthropic.APIError:
+        raise
+    except json.JSONDecodeError as exc:
+        logger.warning("Matching returned invalid JSON for '%s': %s", item_name, exc)
         return {market: None for market in config.supermarkets}
 
     result: dict[str, PriceOffer | None] = {}

@@ -3,6 +3,8 @@
 import logging
 import sys
 
+import anthropic
+
 from .comparator import build_carts, rank_by_offer_volume
 from .config import Config
 from .notifier import format_message, send_email
@@ -30,12 +32,16 @@ def main() -> None:
     items_to_buy, pantry_items = load_grocery_list(config)
 
     # Build price comparisons
-    logger.info("Building carts for %d items to buy", len(items_to_buy))
-    shopping_carts = build_carts(items_to_buy, config)
-    ranked = rank_by_offer_volume(shopping_carts)
+    try:
+        logger.info("Building carts for %d items to buy", len(items_to_buy))
+        shopping_carts = build_carts(items_to_buy, config)
+        ranked = rank_by_offer_volume(shopping_carts)
 
-    logger.info("Building carts for %d pantry items", len(pantry_items))
-    pantry_carts = rank_by_offer_volume(build_carts(pantry_items, config))
+        logger.info("Building carts for %d pantry items", len(pantry_items))
+        pantry_carts = rank_by_offer_volume(build_carts(pantry_items, config))
+    except anthropic.APIError as exc:
+        logger.error("Claude API error during price matching: %s", exc)
+        sys.exit(1)
 
     # Print summary to terminal
     pantry_by_market = {cart.supermarket: cart for cart in pantry_carts}

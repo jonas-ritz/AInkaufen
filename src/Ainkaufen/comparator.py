@@ -3,6 +3,8 @@
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+import anthropic
+
 from .config import Config
 from .matcher import match_best_offers
 from .models import CartSummary, GroceryItem, PriceOffer
@@ -35,6 +37,8 @@ def build_carts(
             item = futures[future]
             try:
                 best_per_market = future.result()
+            except anthropic.APIError:
+                raise
             except Exception as exc:
                 logger.warning("Failed to process '%s': %s", item.name, exc)
                 continue
