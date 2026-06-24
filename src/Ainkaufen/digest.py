@@ -1,11 +1,16 @@
 """Daily AI news and learning digest via Claude API with web search."""
 
+import base64
+import io
 import logging
 import re
 import sys
 from datetime import date
 
 import anthropic
+import matplotlib
+matplotlib.use("Agg")  # non-interactive backend, must be set before pyplot import
+import matplotlib.pyplot as plt
 
 from .config import DigestConfig
 from .notifier import send_email
@@ -93,12 +98,47 @@ Keine Hardware. Nur die wirklich relevanten Dinge.
 
 ## Konzept des Tages: {concept}
 150 Wörter. Klar, präzise, mit einer Analogie für Entwickler. Darf mathematisch sein.
-Wichtig für Formeln: Kein LaTeX. Nutze stattdessen Unicode-Zeichen direkt im Text:
-griechische Buchstaben (α β γ σ θ), Operatoren (∑ ∏ ∫ ∂ √ ∞), Pfeile (→ ←),
-Hoch-/Tiefstellung (x² xᵢ), Vergleiche (≈ ≠ ≤ ≥). Brüche als a/b schreiben.
+Formeln als LaTeX schreiben: `$...$` für Inline-Formeln (z.B. $\sigma(x) = \frac{{1}}{{1+e^{{-x}}}}$),
+`$$...$$` für eigenständige Blockformeln. Kein Fließtext mit Formeln mischen — Blockformeln auf eigene Zeile.
 
 Keine Meta-Kommentare. Direkt starten.\
 """
+
+# ---------------------------------------------------------------------------
+# LaTeX formula rendering
+# ---------------------------------------------------------------------------
+
+def _latex_to_img(latex: str, block: bool = False) -> str:
+    """Render a LaTeX expression to a base64-embedded PNG <img> tag."""
+    try:
+        fig = plt.figure(figsize=(0.01, 0.01))
+        fig.text(0, 0, f"${latex}$", fontsize=13 if block else 11, color="#1a1a1a")
+        buf = io.BytesIO()
+        fig.savefig(buf, format="png", bbox_inches="tight",
+                    pad_inches=0.06, dpi=150, transparent=True)
+        plt.close(fig)
+        b64 = base64.b64encode(buf.getvalue()).decode()
+        style = "display:block;margin:10px auto;" if block else "vertical-align:middle;"
+        return f'<img src="data:image/png;base64,{b64}" style="{style}" alt="{latex}">'
+    except Exception:
+        return f"<code>{latex}</code>"
+
+
+def _replace_math(text: str) -> str:
+    """Replace $$...$$ and $...$ with rendered formula images."""
+    text = re.sub(
+        r"\$\$(.+?)\$\$",
+        lambda m: _latex_to_img(m.group(1).strip(), block=True),
+        text,
+        flags=re.DOTALL,
+    )
+    text = re.sub(
+        r"\$([^$\n]+?)\$",
+        lambda m: _latex_to_img(m.group(1).strip(), block=False),
+        text,
+    )
+    return text
+
 
 # ---------------------------------------------------------------------------
 # Markdown → HTML conversion (handles what Claude typically produces)
@@ -111,6 +151,7 @@ def _inline_bold(text: str) -> str:
 
 def _markdown_to_html(text: str) -> str:
     """Convert Markdown (headers, bold, bullet/numbered lists, paragraphs) to HTML."""
+    text = _replace_math(text)
     lines = text.splitlines()
     html: list[str] = []
     in_ul = False
