@@ -85,36 +85,16 @@ def _build_prompt() -> str:
     today_str = date.today().strftime("%d. %B %Y")
     concept = _concept_of_day()
     return f"""\
-Heute ist der {today_str}.
+Heute ist der {today_str}. Erstelle ein kompaktes KI-Digest für einen Softwareentwickler.
 
-Erstelle ein tägliches KI-Nachrichten- und Lern-Digest für einen Softwareentwickler.
+## News (3 Meldungen, je 2 Sätze)
+Suche nach den wichtigsten KI-Neuigkeiten von heute – Software, Modelle, Geschäftliches. \
+Keine Hardware. Nur die wirklich relevanten Dinge.
 
-Suche nach den neuesten KI-Nachrichten von heute ({today_str}) und den letzten 24 Stunden \
-– einschließlich technischer Durchbrüche, Modellveröffentlichungen, Branchenentwicklungen \
-und Forschungsarbeiten. Halte die Balance zwischen technischer Tiefe und gesellschaftlicher \
-Relevanz. Es sollte nicht zu tiefgehend sein, ein hohes Niveau (Überblick) genügt. \
-Dabei soll es nicht im Detail um Hardware gehen: es soll um die Software gehen, \
-gesellschaftliche und geschäftliche Entwicklungen.
+## Konzept des Tages: {concept}
+150 Wörter. Klar, präzise, mit einer Analogie für Entwickler. Darf mathematisch sein.
 
-Fasse 3–5 wichtige Meldungen in jeweils 2–3 Sätzen zusammen, geschrieben für einen \
-Entwickler, der beruflich auf dem Laufenden und auf dem Arbeitsmarkt wettbewerbsfähig \
-bleiben möchte. Aber eher die großen, wesentlichen Dinge.
-
-Das heutige Konzept des Tages ist: **{concept}**
-Erkläre genau dieses Konzept klar und verständlich in 150–200 Wörtern – verwende \
-Analogien und Beispiele, die für einen Softwareentwickler nachvollziehbar sind. \
-Es darf auch mathematisch sein.
-
-Halte die Gesamtlänge bei etwa 500 Wörtern.
-
-Formatiere das Ganze als gut lesbares Digest mit einem Abschnitt "News" und \
-anschließend einem Abschnitt "Concept of the Day" (Konzept des Tages). Falls keine \
-bedeutenden Nachrichten verfügbar sind, vermerke dies kurz und füge dennoch die \
-Konzepterklärung hinzu.
-
-Wichtig: Beginne deine Antwort sofort mit dem Digest-Inhalt. Kein Vorwort, keine \
-Zusammenfassung deines Vorgehens, kein "Ich habe genug Material gesammelt" oder \
-ähnliche Meta-Kommentare. Direkt mit dem ersten News-Abschnitt starten.\
+Keine Meta-Kommentare. Direkt starten.\
 """
 
 # ---------------------------------------------------------------------------
@@ -207,8 +187,8 @@ def generate_digest(config: DigestConfig) -> str:
     for attempt in range(MAX_CONTINUATIONS):
         logger.info("Digest: API call attempt %d/%d", attempt + 1, MAX_CONTINUATIONS)
         with client.messages.stream(
-            model="claude-opus-4-8",
-            max_tokens=4096,
+            model="claude-sonnet-4-6",
+            max_tokens=1024,
             tools=tools,  # type: ignore[arg-type]
             messages=messages,  # type: ignore[arg-type]
         ) as stream:
