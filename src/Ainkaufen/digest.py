@@ -93,6 +93,9 @@ Keine Hardware. Nur die wirklich relevanten Dinge.
 
 ## Konzept des Tages: {concept}
 150 Wörter. Klar, präzise, mit einer Analogie für Entwickler. Darf mathematisch sein.
+Wichtig für Formeln: Kein LaTeX. Nutze stattdessen Unicode-Zeichen direkt im Text:
+griechische Buchstaben (α β γ σ θ), Operatoren (∑ ∏ ∫ ∂ √ ∞), Pfeile (→ ←),
+Hoch-/Tiefstellung (x² xᵢ), Vergleiche (≈ ≠ ≤ ≥). Brüche als a/b schreiben.
 
 Keine Meta-Kommentare. Direkt starten.\
 """
